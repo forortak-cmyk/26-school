@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Учителю — Школьное портфолио</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+
+<main class="container">
+  <div class="tabs">
+    <button class="active" data-tab="events">Мои события</button>
+    <button data-tab="portfolios">Портфолио учеников</button>
+  </div>
+
+  <!-- ---------- Вкладка: события ---------- -->
+  <section id="tab-events">
+    <div class="section-title">
+      <h2>Создать событие</h2>
+    </div>
+    <div class="card plain">
+      <form id="event-form">
+        <label for="ev-title">Название</label>
+        <input type="text" id="ev-title" required>
+
+        <label for="ev-description">Описание</label>
+        <textarea id="ev-description"></textarea>
+
+        <div class="grid-2">
+          <div>
+            <label for="ev-datetime">Дата и время</label>
+            <input type="datetime-local" id="ev-datetime" required>
+          </div>
+          <div>
+            <label for="ev-location">Место</label>
+            <input type="text" id="ev-location">
+          </div>
+        </div>
+
+        <label for="ev-max">Максимум участников (необязательно)</label>
+        <input type="number" id="ev-max" min="1">
+
+        <div class="form-actions">
+          <button type="submit" id="save-event-btn">Создать событие</button>
+        </div>
+        <p class="error-msg" id="event-error" style="display:none;"></p>
+      </form>
+    </div>
+
+    <h2>Мои события и записавшиеся</h2>
+    <div id="my-created-events"><p class="muted">Загрузка...</p></div>
+  </section>
+
+  <!-- ---------- Вкладка: портфолио учеников ---------- -->
+  <section id="tab-portfolios" style="display:none;">
+    <h2>Портфолио учеников</h2>
+    <input type="text" id="student-search" placeholder="Поиск по имени, фамилии или классу...">
+    <div id="students-list" style="margin-top:16px;"><p class="muted">Загрузка...</p></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/common.js"></script>
+<script src="js/teacher.js"></script>
+</body>
+</html>

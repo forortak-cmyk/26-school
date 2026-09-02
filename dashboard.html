@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Моё портфолио — Школьное портфолио</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+
+<main class="container">
+  <div class="tabs">
+    <button class="active" data-tab="portfolio">Портфолио</button>
+    <button data-tab="events">Мои записи на события</button>
+  </div>
+
+  <!-- ---------- Вкладка: портфолио ---------- -->
+  <section id="tab-portfolio">
+    <div class="section-title">
+      <h2>Моё портфолио</h2>
+      <button id="add-item-btn">+ Добавить работу</button>
+    </div>
+
+    <p class="small muted" id="public-link-line"></p>
+
+    <div id="portfolio-form-wrap" style="display:none;" class="card plain">
+      <h3 id="form-title">Новая работа</h3>
+      <form id="portfolio-form">
+        <input type="hidden" id="item-id">
+        <label for="item-title">Название</label>
+        <input type="text" id="item-title" required>
+
+        <label for="item-category">Категория</label>
+        <select id="item-category">
+          <option value="project">Проект</option>
+          <option value="achievement">Достижение</option>
+          <option value="certificate">Сертификат</option>
+          <option value="creative">Творческая работа</option>
+        </select>
+
+        <label for="item-date">Дата</label>
+        <input type="date" id="item-date">
+
+        <label for="item-description">Описание</label>
+        <textarea id="item-description"></textarea>
+
+        <label for="item-file">Файл (фото / документ, необязательно)</label>
+        <input type="file" id="item-file">
+        <p class="hint" id="existing-file-hint"></p>
+
+        <label for="item-link">Или внешняя ссылка (необязательно)</label>
+        <input type="url" id="item-link" placeholder="https://...">
+
+        <div class="form-actions">
+          <button type="submit" id="save-item-btn">Сохранить</button>
+          <button type="button" class="secondary" id="cancel-item-btn">Отмена</button>
+        </div>
+        <p class="error-msg" id="item-error" style="display:none;"></p>
+      </form>
+    </div>
+
+    <div id="portfolio-list"><p class="muted">Загрузка...</p></div>
+  </section>
+
+  <!-- ---------- Вкладка: мои события ---------- -->
+  <section id="tab-events" style="display:none;">
+    <h2>Мои записи на события</h2>
+    <div id="my-events-list"><p class="muted">Загрузка...</p></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/common.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

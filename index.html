@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Вход — Школьное портфолио</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<main class="center-box">
+  <h1>Школьное портфолио</h1>
+  <p class="muted">Войдите, чтобы открыть личный кабинет.</p>
+
+  <form id="login-form">
+    <label for="email">Email</label>
+    <input type="email" id="email" required autocomplete="email">
+
+    <label for="password">Пароль</label>
+    <input type="password" id="password" required autocomplete="current-password">
+
+    <div class="form-actions">
+      <button type="submit" id="submit-btn">Войти</button>
+    </div>
+    <p class="error-msg" id="error-msg" style="display:none;"></p>
+  </form>
+
+  <hr class="divider">
+  <p class="small">Ещё нет аккаунта? <a href="register.html">Зарегистрироваться</a></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabaseClient.js"></script>
+<script>
+  // Если пользователь уже вошёл — сразу отправляем в кабинет.
+  (async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) window.location.href = 'dashboard.html';
+  })();
+
+  const form = document.getElementById('login-form');
+  const errorMsg = document.getElementById('error-msg');
+  const submitBtn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMsg.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Входим...';
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      errorMsg.textContent = 'Не удалось войти: проверьте email и пароль.';
+      errorMsg.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Войти';
+      return;
+    }
+    window.location.href = 'dashboard.html';
+  });
+</script>
+</body>
+</html>
