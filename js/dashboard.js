@@ -1,9 +1,11 @@
-const categoryLabels = {
-  project: 'Проект',
-  achievement: 'Достижение',
-  certificate: 'Сертификат',
-  creative: 'Творческая работа',
-};
+function categoryLabels() {
+  return {
+    project: t('category.project'),
+    achievement: t('category.achievement'),
+    certificate: t('category.certificate'),
+    creative: t('category.creative'),
+  };
+}
 
 let currentProfile = null;
 
@@ -15,7 +17,7 @@ let currentProfile = null;
 
   const publicUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', '')}portfolio.html?id=${currentProfile.id}`;
   document.getElementById('public-link-line').innerHTML =
-    `Публичная ссылка на ваше портфолио: <a href="${publicUrl}" target="_blank">${publicUrl}</a>`;
+    `${t('dashboard.publicLink')}<a href="${publicUrl}" target="_blank">${publicUrl}</a>`;
 
   await loadPortfolio();
   await loadMyEvents();
@@ -40,7 +42,7 @@ const itemError = document.getElementById('item-error');
 document.getElementById('add-item-btn').addEventListener('click', () => {
   form.reset();
   document.getElementById('item-id').value = '';
-  document.getElementById('form-title').textContent = 'Новая работа';
+  document.getElementById('form-title').textContent = t('dashboard.formTitleNew');
   document.getElementById('existing-file-hint').textContent = '';
   itemError.style.display = 'none';
   formWrap.style.display = 'block';
@@ -56,7 +58,7 @@ form.addEventListener('submit', async (e) => {
   itemError.style.display = 'none';
   const saveBtn = document.getElementById('save-item-btn');
   saveBtn.disabled = true;
-  saveBtn.textContent = 'Сохраняем...';
+  saveBtn.textContent = t('saving');
 
   try {
     const id = document.getElementById('item-id').value;
@@ -95,11 +97,11 @@ form.addEventListener('submit', async (e) => {
     await loadPortfolio();
   } catch (err) {
     console.error(err);
-    itemError.textContent = 'Ошибка сохранения: ' + err.message;
+    itemError.textContent = t('item.saveError') + err.message;
     itemError.style.display = 'block';
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = 'Сохранить';
+    saveBtn.textContent = t('save');
   }
 });
 
@@ -113,31 +115,32 @@ async function loadPortfolio() {
     .order('item_date', { ascending: false, nullsFirst: false });
 
   if (error) {
-    listEl.innerHTML = `<p class="error-msg">Не удалось загрузить портфолио.</p>`;
+    listEl.innerHTML = `<p class="error-msg">${t('portfolio.loadError')}</p>`;
     return;
   }
 
   if (!data.length) {
-    listEl.innerHTML = `<div class="empty-state">Пока пусто. Добавьте первую работу в портфолио.</div>`;
+    listEl.innerHTML = `<div class="empty-state">${t('portfolio.empty')}</div>`;
     return;
   }
 
+  const labels = categoryLabels();
   listEl.innerHTML = data.map(item => `
     <div class="card">
       <div class="card-row">
         <div>
-          <span class="category-tag">${categoryLabels[item.category] || item.category}</span>
+          <span class="category-tag">${labels[item.category] || item.category}</span>
           <h3 style="display:inline;">${escapeHtml(item.title)}</h3>
           <p class="meta-line">${item.item_date ? formatDate(item.item_date) : ''}</p>
         </div>
         <div>
-          <button class="secondary small" data-edit="${item.id}">Изменить</button>
-          <button class="danger small" data-delete="${item.id}">Удалить</button>
+          <button class="secondary small" data-edit="${item.id}">${t('edit')}</button>
+          <button class="danger small" data-delete="${item.id}">${t('delete')}</button>
         </div>
       </div>
       ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
-      ${item.file_url ? `<p><a href="${item.file_url}" target="_blank">Открыть файл</a></p>` : ''}
-      ${item.external_link ? `<p><a href="${item.external_link}" target="_blank">Внешняя ссылка</a></p>` : ''}
+      ${item.file_url ? `<p><a href="${item.file_url}" target="_blank">${t('openFile')}</a></p>` : ''}
+      ${item.external_link ? `<p><a href="${item.external_link}" target="_blank">${t('externalLink')}</a></p>` : ''}
     </div>
   `).join('');
 
@@ -156,19 +159,19 @@ function editItem(item) {
   document.getElementById('item-date').value = item.item_date || '';
   document.getElementById('item-description').value = item.description || '';
   document.getElementById('item-link').value = item.external_link || '';
-  document.getElementById('form-title').textContent = 'Редактировать работу';
+  document.getElementById('form-title').textContent = t('dashboard.formTitleEdit');
   document.getElementById('existing-file-hint').textContent = item.file_url
-    ? 'Уже прикреплён файл. Выберите новый, чтобы заменить его.' : '';
+    ? t('item.existingFileHint') : '';
   itemError.style.display = 'none';
   formWrap.style.display = 'block';
   window.scrollTo({ top: formWrap.offsetTop - 20, behavior: 'smooth' });
 }
 
 async function deleteItem(id) {
-  if (!confirm('Удалить эту работу из портфолио?')) return;
+  if (!confirm(t('item.deleteConfirm'))) return;
   const { error } = await sb.from('portfolio_items').delete().eq('id', id);
   if (error) {
-    alert('Не удалось удалить: ' + error.message);
+    alert(t('item.deleteError') + error.message);
     return;
   }
   await loadPortfolio();
@@ -183,12 +186,12 @@ async function loadMyEvents() {
     .eq('user_id', currentProfile.id);
 
   if (error) {
-    listEl.innerHTML = `<p class="error-msg">Не удалось загрузить записи.</p>`;
+    listEl.innerHTML = `<p class="error-msg">${t('events.loadError')}</p>`;
     return;
   }
 
   if (!data.length) {
-    listEl.innerHTML = `<div class="empty-state">Вы пока не записаны ни на одно событие. <a href="calendar.html">Посмотреть календарь</a>.</div>`;
+    listEl.innerHTML = `<div class="empty-state">${t('events.empty')} <a href="calendar.html">${t('events.viewCalendar')}</a>.</div>`;
     return;
   }
 
@@ -200,7 +203,7 @@ async function loadMyEvents() {
         <h3>${escapeHtml(ev.title)}</h3>
         <p class="meta-line">${formatDateTime(ev.event_date)} · ${escapeHtml(ev.location || '')}</p>
         ${ev.description ? `<p>${escapeHtml(ev.description)}</p>` : ''}
-        <button class="danger small" data-cancel="${reg.id}">Отменить запись</button>
+        <button class="danger small" data-cancel="${reg.id}">${t('events.cancelReg')}</button>
       </div>
     `;
   }).join('');
@@ -211,10 +214,10 @@ async function loadMyEvents() {
 }
 
 async function cancelRegistration(regId) {
-  if (!confirm('Отменить запись на это событие?')) return;
+  if (!confirm(t('events.cancelConfirm'))) return;
   const { error } = await sb.from('event_registrations').delete().eq('id', regId);
   if (error) {
-    alert('Не удалось отменить запись: ' + error.message);
+    alert(t('events.cancelError') + error.message);
     return;
   }
   await loadMyEvents();

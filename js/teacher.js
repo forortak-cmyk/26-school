@@ -1,12 +1,5 @@
 let currentProfile = null;
 
-const categoryLabels = {
-  project: 'Проект',
-  achievement: 'Достижение',
-  certificate: 'Сертификат',
-  creative: 'Творческая работа',
-};
-
 (async () => {
   const auth = await requireAuth();
   if (!auth) return;
@@ -40,7 +33,7 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
   errorEl.style.display = 'none';
   const btn = document.getElementById('save-event-btn');
   btn.disabled = true;
-  btn.textContent = 'Создаём...';
+  btn.textContent = t('event.creating');
 
   try {
     const title = document.getElementById('ev-title').value.trim();
@@ -59,11 +52,11 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
     document.getElementById('event-form').reset();
     await loadMyCreatedEvents();
   } catch (err) {
-    errorEl.textContent = 'Ошибка: ' + err.message;
+    errorEl.textContent = t('event.error') + err.message;
     errorEl.style.display = 'block';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Создать событие';
+    btn.textContent = t('event.create');
   }
 });
 
@@ -78,12 +71,12 @@ async function loadMyCreatedEvents() {
     .order('event_date', { ascending: true });
 
   if (error) {
-    listEl.innerHTML = `<p class="error-msg">Не удалось загрузить события.</p>`;
+    listEl.innerHTML = `<p class="error-msg">${t('teacher.eventsLoadError')}</p>`;
     return;
   }
 
   if (!events.length) {
-    listEl.innerHTML = `<div class="empty-state">Вы пока не создали ни одного события.</div>`;
+    listEl.innerHTML = `<div class="empty-state">${t('teacher.myEventsEmpty')}</div>`;
     return;
   }
 
@@ -96,15 +89,15 @@ async function loadMyCreatedEvents() {
 
     const participants = (regs || []).map(r =>
       r.profiles ? `${escapeHtml(r.profiles.first_name)} ${escapeHtml(r.profiles.last_name)} (${escapeHtml(r.profiles.class || '')})` : ''
-    ).join(', ') || '<span class="muted">пока никто не записался</span>';
+    ).join(', ') || `<span class="muted">${t('teacher.noneRegistered')}</span>`;
 
     html.push(`
       <div class="card">
         <h3>${escapeHtml(ev.title)}</h3>
         <p class="meta-line">${formatDateTime(ev.event_date)} · ${escapeHtml(ev.location || '')}
-          ${ev.max_participants != null ? `· мест: ${ev.max_participants}` : ''}</p>
-        <p class="small"><strong>Записались:</strong> ${participants}</p>
-        <button class="danger small" data-delete-event="${ev.id}">Удалить событие</button>
+          ${ev.max_participants != null ? `· ${ev.max_participants}` : ''}</p>
+        <p class="small"><strong>${t('teacher.registeredLabel')}</strong> ${participants}</p>
+        <button class="danger small" data-delete-event="${ev.id}">${t('event.delete')}</button>
       </div>
     `);
   }
@@ -112,9 +105,9 @@ async function loadMyCreatedEvents() {
 
   listEl.querySelectorAll('[data-delete-event]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Удалить это событие? Все записи на него тоже удалятся.')) return;
+      if (!confirm(t('event.deleteConfirm'))) return;
       const { error } = await sb.from('events').delete().eq('id', btn.dataset.deleteEvent);
-      if (error) { alert('Ошибка: ' + error.message); return; }
+      if (error) { alert(t('event.error') + error.message); return; }
       await loadMyCreatedEvents();
     });
   });
@@ -131,7 +124,7 @@ async function loadStudents() {
     .order('last_name', { ascending: true });
 
   if (error) {
-    document.getElementById('students-list').innerHTML = `<p class="error-msg">Не удалось загрузить список учеников.</p>`;
+    document.getElementById('students-list').innerHTML = `<p class="error-msg">${t('teacher.studentsLoadError')}</p>`;
     return;
   }
   allStudents = data;
@@ -141,16 +134,16 @@ async function loadStudents() {
 function renderStudents(students) {
   const listEl = document.getElementById('students-list');
   if (!students.length) {
-    listEl.innerHTML = `<div class="empty-state">Ученики не найдены.</div>`;
+    listEl.innerHTML = `<div class="empty-state">${t('teacher.studentsEmpty')}</div>`;
     return;
   }
   listEl.innerHTML = students.map(s => `
     <div class="card plain card-row">
       <div>
         <strong>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</strong>
-        <span class="meta-line">Класс: ${escapeHtml(s.class || '—')}</span>
+        <span class="meta-line">${t('teacher.classLabel')}${escapeHtml(s.class || '—')}</span>
       </div>
-      <a class="btn secondary" href="portfolio.html?id=${s.id}" target="_blank">Открыть портфолио</a>
+      <a class="btn secondary" href="portfolio.html?id=${s.id}" target="_blank">${t('teacher.openPortfolio')}</a>
     </div>
   `).join('');
 }

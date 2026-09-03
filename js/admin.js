@@ -1,8 +1,6 @@
 let currentProfile = null;
 let allUsers = [];
 
-const roleLabels = { student: 'ученик', teacher: 'учитель', admin: 'админ' };
-
 (async () => {
   const auth = await requireAuth();
   if (!auth) return;
@@ -24,7 +22,7 @@ async function loadUsers() {
     .order('last_name', { ascending: true });
 
   if (error) {
-    document.getElementById('users-list').innerHTML = `<p class="error-msg">Не удалось загрузить пользователей.</p>`;
+    document.getElementById('users-list').innerHTML = `<p class="error-msg">${t('admin.loadError')}</p>`;
     return;
   }
   allUsers = data;
@@ -34,7 +32,7 @@ async function loadUsers() {
 function renderUsers(users) {
   const listEl = document.getElementById('users-list');
   if (!users.length) {
-    listEl.innerHTML = `<div class="empty-state">Пользователи не найдены.</div>`;
+    listEl.innerHTML = `<div class="empty-state">${t('admin.empty')}</div>`;
     return;
   }
 
@@ -42,8 +40,8 @@ function renderUsers(users) {
     <div class="card plain card-row">
       <div>
         <strong>${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</strong>
-        <span class="role-tag">${roleLabels[u.role] || u.role}</span>
-        <p class="meta-line">${escapeHtml(u.email)} · класс: ${escapeHtml(u.class || '—')}</p>
+        <span class="role-tag">${t('role.' + u.role) || u.role}</span>
+        <p class="meta-line">${escapeHtml(u.email)} · ${t('admin.classLabel')}${escapeHtml(u.class || '—')}</p>
       </div>
       <div>
         ${renderRoleButton(u)}
@@ -57,18 +55,18 @@ function renderUsers(users) {
 }
 
 function renderRoleButton(u) {
-  if (u.role === 'admin') return '<span class="small muted">управляется вручную</span>';
-  if (u.id === currentProfile.id) return '<span class="small muted">это вы</span>';
+  if (u.role === 'admin') return `<span class="small muted">${t('admin.managedManually')}</span>`;
+  if (u.id === currentProfile.id) return `<span class="small muted">${t('admin.thatsYou')}</span>`;
   if (u.role === 'teacher') {
-    return `<button class="secondary small" data-toggle-teacher="${u.id}" data-new-role="student">Снять роль учителя</button>`;
+    return `<button class="secondary small" data-toggle-teacher="${u.id}" data-new-role="student">${t('admin.removeTeacher')}</button>`;
   }
-  return `<button class="small" data-toggle-teacher="${u.id}" data-new-role="teacher">Сделать учителем</button>`;
+  return `<button class="small" data-toggle-teacher="${u.id}" data-new-role="teacher">${t('admin.makeTeacher')}</button>`;
 }
 
 async function toggleTeacherRole(userId, newRole) {
   const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', userId);
   if (error) {
-    alert('Не удалось изменить роль: ' + error.message);
+    alert(t('admin.roleError') + error.message);
     return;
   }
   await loadUsers();
