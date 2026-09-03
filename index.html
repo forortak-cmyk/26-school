@@ -1,37 +1,39 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="hy">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Вход — Школьное портфолио</title>
+<title>Մուտք — Դպրոցական պորտֆոլիո</title>
 <link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('site_theme') || 'light');</script>
 </head>
 <body>
 
 <main class="center-box">
-  <h1>Школьное портфолио</h1>
-  <p class="muted">Войдите, чтобы открыть личный кабинет.</p>
+  <h1 data-i18n="login.title">Դպրոցական պորտֆոլիո</h1>
+  <p class="muted" data-i18n="login.subtitle">Մուտք գործեք՝ անձնական էջը բացելու համար։</p>
 
   <form id="login-form">
-    <label for="email">Email</label>
+    <label for="email" data-i18n="login.email">Էլ. հասցե</label>
     <input type="email" id="email" required autocomplete="email">
 
-    <label for="password">Пароль</label>
+    <label for="password" data-i18n="login.password">Գաղտնաբառ</label>
     <input type="password" id="password" required autocomplete="current-password">
 
     <div class="form-actions">
-      <button type="submit" id="submit-btn">Войти</button>
+      <button type="submit" id="submit-btn" data-i18n="login.submit">Մուտք</button>
     </div>
     <p class="error-msg" id="error-msg" style="display:none;"></p>
   </form>
 
   <hr class="divider">
-  <p class="small">Ещё нет аккаунта? <a href="register.html">Зарегистрироваться</a></p>
+  <p class="small"><span data-i18n="login.noAccount">Դեռ հաշիվ չունե՞ք։</span> <a href="register.html" data-i18n="login.register">Գրանցվել</a></p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // Если пользователь уже вошёл — сразу отправляем в кабинет.
   (async () => {
@@ -47,7 +49,7 @@
     e.preventDefault();
     errorMsg.style.display = 'none';
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Входим...';
+    submitBtn.textContent = t('login.submitting');
 
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -55,10 +57,10 @@
     const { error } = await sb.auth.signInWithPassword({ email, password });
 
     if (error) {
-      errorMsg.textContent = 'Не удалось войти: проверьте email и пароль.';
+      errorMsg.textContent = t('login.error');
       errorMsg.style.display = 'block';
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Войти';
+      submitBtn.textContent = t('login.submit');
       return;
     }
     window.location.href = 'dashboard.html';

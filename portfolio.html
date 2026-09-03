@@ -1,32 +1,34 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="hy">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Портфолио ученика</title>
+<title>Աշակերտի պորտֆոլիո</title>
 <link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('site_theme') || 'light');</script>
 </head>
 <body>
 
 <header class="app-header">
-  <span class="brand">Школьное портфолио</span>
+  <span class="brand" data-i18n="brand">Դպրոցական պորտֆոլիո</span>
 </header>
 
 <main class="container" id="main-content">
-  <p class="muted">Загрузка...</p>
+  <p class="muted">...</p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabaseClient.js"></script>
 <script src="js/common.js"></script>
+<script src="js/i18n.js"></script>
 <script>
-  const categoryLabels = {
-    project: 'Проект',
-    achievement: 'Достижение',
-    certificate: 'Сертификат',
-    creative: 'Творческая работа',
-  };
+  const categoryLabels = () => ({
+    project: t('category.project'),
+    achievement: t('category.achievement'),
+    certificate: t('category.certificate'),
+    creative: t('category.creative'),
+  });
 
   (async () => {
     const params = new URLSearchParams(window.location.search);
@@ -34,7 +36,7 @@
     const content = document.getElementById('main-content');
 
     if (!userId) {
-      content.innerHTML = '<div class="empty-state">Ссылка на портфолио не указана.</div>';
+      content.innerHTML = `<div class="empty-state">${t('portfolio.noId')}</div>`;
       return;
     }
 
@@ -48,7 +50,7 @@
       .single();
 
     if (profileError || !profile) {
-      content.innerHTML = '<div class="empty-state">Портфолио не найдено.</div>';
+      content.innerHTML = `<div class="empty-state">${t('portfolio.notFound')}</div>`;
       return;
     }
 
@@ -58,25 +60,26 @@
       .eq('user_id', userId)
       .order('item_date', { ascending: false, nullsFirst: false });
 
+    const labels = categoryLabels();
     let itemsHtml;
     if (itemsError || !items || !items.length) {
-      itemsHtml = '<div class="empty-state">Портфолио пока пустое.</div>';
+      itemsHtml = `<div class="empty-state">${t('portfolio.empty')}</div>`;
     } else {
       itemsHtml = items.map(item => `
         <div class="card">
-          <span class="category-tag">${categoryLabels[item.category] || item.category}</span>
+          <span class="category-tag">${labels[item.category] || item.category}</span>
           <h3 style="display:inline;">${escapeHtml(item.title)}</h3>
           <p class="meta-line">${item.item_date ? formatDate(item.item_date) : ''}</p>
           ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
-          ${item.file_url ? `<p><a href="${item.file_url}" target="_blank">Открыть файл</a></p>` : ''}
-          ${item.external_link ? `<p><a href="${item.external_link}" target="_blank">Внешняя ссылка</a></p>` : ''}
+          ${item.file_url ? `<p><a href="${item.file_url}" target="_blank">${t('openFile')}</a></p>` : ''}
+          ${item.external_link ? `<p><a href="${item.external_link}" target="_blank">${t('externalLink')}</a></p>` : ''}
         </div>
       `).join('');
     }
 
     content.innerHTML = `
       <h1>${escapeHtml(profile.first_name)} ${escapeHtml(profile.last_name)}</h1>
-      <p class="muted">Класс: ${escapeHtml(profile.class || '—')}</p>
+      <p class="muted">${t('portfolio.classLabel')}${escapeHtml(profile.class || '—')}</p>
       <hr class="divider">
       ${itemsHtml}
     `;

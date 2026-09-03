@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="hy">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Моё портфолио — Школьное портфолио</title>
+<title>Իմ պորտֆոլիոն — Դպրոցական պորտֆոլիո</title>
 <link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('site_theme') || 'light');</script>
 </head>
 <body>
 
@@ -13,67 +14,68 @@
 
 <main class="container">
   <div class="tabs">
-    <button class="active" data-tab="portfolio">Портфолио</button>
-    <button data-tab="events">Мои записи на события</button>
+    <button class="active" data-tab="portfolio" data-i18n="dashboard.tabPortfolio">Պորտֆոլիո</button>
+    <button data-tab="events" data-i18n="dashboard.tabEvents">Իմ գրանցումները</button>
   </div>
 
   <!-- ---------- Вкладка: портфолио ---------- -->
   <section id="tab-portfolio">
     <div class="section-title">
-      <h2>Моё портфолио</h2>
-      <button id="add-item-btn">+ Добавить работу</button>
+      <h2 data-i18n="dashboard.title">Իմ պորտֆոլիոն</h2>
+      <button id="add-item-btn" data-i18n="dashboard.addItem">+ Ավելացնել աշխատանք</button>
     </div>
 
     <p class="small muted" id="public-link-line"></p>
 
     <div id="portfolio-form-wrap" style="display:none;" class="card plain">
-      <h3 id="form-title">Новая работа</h3>
+      <h3 id="form-title" data-i18n="dashboard.formTitleNew">Նոր աշխատանք</h3>
       <form id="portfolio-form">
         <input type="hidden" id="item-id">
-        <label for="item-title">Название</label>
+        <label for="item-title" data-i18n="item.titleLabel">Վերնագիր</label>
         <input type="text" id="item-title" required>
 
-        <label for="item-category">Категория</label>
+        <label for="item-category" data-i18n="item.categoryLabel">Կատեգորիա</label>
         <select id="item-category">
-          <option value="project">Проект</option>
-          <option value="achievement">Достижение</option>
-          <option value="certificate">Сертификат</option>
-          <option value="creative">Творческая работа</option>
+          <option value="project" data-i18n="category.project">Նախագիծ</option>
+          <option value="achievement" data-i18n="category.achievement">Ձեռքբերում</option>
+          <option value="certificate" data-i18n="category.certificate">Վկայական</option>
+          <option value="creative" data-i18n="category.creative">Ստեղծագործական աշխատանք</option>
         </select>
 
-        <label for="item-date">Дата</label>
+        <label for="item-date" data-i18n="item.dateLabel">Ամսաթիվ</label>
         <input type="date" id="item-date">
 
-        <label for="item-description">Описание</label>
+        <label for="item-description" data-i18n="item.descriptionLabel">Նկարագրություն</label>
         <textarea id="item-description"></textarea>
 
-        <label for="item-file">Файл (фото / документ, необязательно)</label>
+        <label for="item-file" data-i18n="item.fileLabel">Ֆայլ (լուսանկար/փաստաթուղթ, ոչ պարտադիր)</label>
         <input type="file" id="item-file">
         <p class="hint" id="existing-file-hint"></p>
 
-        <label for="item-link">Или внешняя ссылка (необязательно)</label>
+        <label for="item-link" data-i18n="item.linkLabel">Կամ արտաքին հղում (ոչ պարտադիր)</label>
         <input type="url" id="item-link" placeholder="https://...">
 
         <div class="form-actions">
-          <button type="submit" id="save-item-btn">Сохранить</button>
-          <button type="button" class="secondary" id="cancel-item-btn">Отмена</button>
+          <button type="submit" id="save-item-btn" data-i18n="save">Պահպանել</button>
+          <button type="button" class="secondary" id="cancel-item-btn" data-i18n="cancel">Չեղարկել</button>
         </div>
         <p class="error-msg" id="item-error" style="display:none;"></p>
       </form>
     </div>
 
-    <div id="portfolio-list"><p class="muted">Загрузка...</p></div>
+    <div id="portfolio-list"><p class="muted">...</p></div>
   </section>
 
   <!-- ---------- Вкладка: мои события ---------- -->
   <section id="tab-events" style="display:none;">
-    <h2>Мои записи на события</h2>
-    <div id="my-events-list"><p class="muted">Загрузка...</p></div>
+    <h2 data-i18n="events.myTitle">Իմ գրանցումները միջոցառումների</h2>
+    <div id="my-events-list"><p class="muted">...</p></div>
   </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/common.js"></script>
 <script src="js/dashboard.js"></script>
 </body>

@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="hy">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Админ — Школьное портфолио</title>
+<title>Ադմին — Դպրոցական պորտֆոլիո</title>
 <link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('site_theme') || 'light');</script>
 </head>
 <body>
 
 <header class="app-header" id="app-header"></header>
 
 <main class="container">
-  <h2>Пользователи</h2>
-  <p class="muted">Назначайте и снимайте роль «учитель». Роль «админ» отсюда не меняется.</p>
-  <input type="text" id="user-search" placeholder="Поиск по имени, email или классу...">
-  <div id="users-list" style="margin-top:16px;"><p class="muted">Загрузка...</p></div>
+  <h2 data-i18n="admin.title">Օգտատերեր</h2>
+  <p class="muted" data-i18n="admin.subtitle">Նշանակեք և հանեք «ուսուցիչ» դերը։ «Ադմին» դերն այստեղից չի փոխվում։</p>
+  <input type="text" id="user-search" data-i18n-placeholder="admin.searchPlaceholder" placeholder="Որոնել ըստ անվան, էլ. հասցեի կամ դասարանի...">
+  <div id="users-list" style="margin-top:16px;"><p class="muted">...</p></div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/common.js"></script>
 <script src="js/admin.js"></script>
 </body>
