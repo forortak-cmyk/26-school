@@ -27,6 +27,8 @@ let currentEditItemId = null; // если редактируем — сюда к
     QRCode.toCanvas(document.getElementById('qr-canvas'), publicUrl, { width: 170, margin: 1 }, (err) => {
       if (err) console.error(err);
     });
+  } else {
+    document.getElementById('qr-canvas').outerHTML = `<p class="small muted">QR ⚠</p>`;
   }
 
   initAvatar();
