@@ -30,27 +30,28 @@ function renderHeader(profile, activePage) {
   if (!el) return;
 
   const links = [
-    { href: 'dashboard.html', label: 'Моё портфолио', page: 'dashboard' },
-    { href: 'calendar.html', label: 'Календарь', page: 'calendar' },
+    { href: 'dashboard.html', label: t('nav.dashboard'), page: 'dashboard' },
+    { href: 'announcements.html', label: t('nav.announcements'), page: 'announcements' },
+    { href: 'calendar.html', label: t('nav.calendar'), page: 'calendar' },
   ];
   if (profile.role === 'teacher' || profile.role === 'admin') {
-    links.push({ href: 'teacher.html', label: 'Учителю', page: 'teacher' });
+    links.push({ href: 'teacher.html', label: t('nav.teacher'), page: 'teacher' });
   }
   if (profile.role === 'admin') {
-    links.push({ href: 'admin.html', label: 'Админ', page: 'admin' });
+    links.push({ href: 'admin.html', label: t('nav.admin'), page: 'admin' });
   }
 
-  const roleLabel = { student: 'ученик', teacher: 'учитель', admin: 'админ' }[profile.role] || profile.role;
+  const roleLabel = t('role.' + profile.role) || profile.role;
 
   el.innerHTML = `
-    <a class="brand" href="dashboard.html">Школьное портфолио</a>
+    <a class="brand" href="dashboard.html">${t('brand')}</a>
     <nav class="app-nav">
       ${links.map(l => `<a href="${l.href}" class="${l.page === activePage ? 'active' : ''}">${l.label}</a>`).join('')}
     </nav>
     <div class="user-badge">
       <span>${profile.first_name} ${profile.last_name}</span>
       <span class="role-tag">${roleLabel}</span>
-      <button class="secondary" id="logout-btn">Выйти</button>
+      <button class="secondary" id="logout-btn">${t('logout')}</button>
     </div>
   `;
 
@@ -69,15 +70,19 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+function dateLocale() {
+  return (typeof getLang === 'function' && getLang() === 'ru') ? 'ru-RU' : 'hy-AM';
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  return d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) +
-    ', ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long', year: 'numeric' }) +
+    ', ' + d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
 }

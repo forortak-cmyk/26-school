@@ -8,6 +8,8 @@ function categoryLabels() {
 }
 
 let currentProfile = null;
+let myRegisteredEvents = [];
+let currentEditItemId = null; // если редактируем — сюда кладём id, чтобы удалять/подгружать вложения
 
 (async () => {
   const auth = await requireAuth();
@@ -15,13 +17,77 @@ let currentProfile = null;
   currentProfile = auth.profile;
   renderHeader(currentProfile, 'dashboard');
 
-  const publicUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', '')}portfolio.html?id=${currentProfile.id}`;
+  // Абсолютный путь от корня сайта — надёжнее, чем вырезать текущее имя
+  // страницы из URL (на Vercel адреса показываются без ".html").
+  const publicUrl = `${window.location.origin}/portfolio?id=${currentProfile.id}`;
   document.getElementById('public-link-line').innerHTML =
     `${t('dashboard.publicLink')}<a href="${publicUrl}" target="_blank">${publicUrl}</a>`;
 
+  if (window.QRCode) {
+    QRCode.toCanvas(document.getElementById('qr-canvas'), publicUrl, { width: 170, margin: 1 }, (err) => {
+      if (err) console.error(err);
+    });
+  }
+
+  initAvatar();
+  await loadMyRegisteredEventsForSelect();
   await loadPortfolio();
   await loadMyEvents();
 })();
+
+// ---------- Аватар ----------
+function initAvatar() {
+  const preview = document.getElementById('avatar-preview');
+  if (currentProfile.avatar_url) {
+    preview.src = currentProfile.avatar_url;
+    preview.style.display = 'inline-block';
+  }
+
+  document.getElementById('avatar-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const errorEl = document.getElementById('avatar-error');
+    errorEl.style.display = 'none';
+
+    try {
+      const path = `${currentProfile.id}/avatar-${Date.now()}-${file.name}`;
+      const { error: uploadError } = await sb.storage.from('portfolio-files').upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: pub } = sb.storage.from('portfolio-files').getPublicUrl(path);
+
+      const { error: updateError } = await sb.from('profiles').update({ avatar_url: pub.publicUrl }).eq('id', currentProfile.id);
+      if (updateError) throw updateError;
+
+      currentProfile.avatar_url = pub.publicUrl;
+      preview.src = pub.publicUrl;
+      preview.style.display = 'inline-block';
+    } catch (err) {
+      errorEl.textContent = t('dashboard.avatarError') + err.message;
+      errorEl.style.display = 'block';
+    }
+  });
+}
+
+// ---------- Список мероприятий пользователя для выпадающего списка ----------
+async function loadMyRegisteredEventsForSelect() {
+  const { data } = await sb
+    .from('event_registrations')
+    .select('events(id, title, event_date)')
+    .eq('user_id', currentProfile.id);
+
+  myRegisteredEvents = (data || []).map(r => r.events).filter(Boolean);
+
+  const select = document.getElementById('item-event');
+  const noneOption = select.querySelector('option[value=""]');
+  select.innerHTML = '';
+  select.appendChild(noneOption);
+  myRegisteredEvents.forEach(ev => {
+    const opt = document.createElement('option');
+    opt.value = ev.id;
+    opt.textContent = `${ev.title} — ${formatDate(ev.event_date)}`;
+    select.appendChild(opt);
+  });
+}
 
 // ---------- Вкладки ----------
 document.querySelectorAll('.tabs button').forEach(btn => {
@@ -34,6 +100,63 @@ document.querySelectorAll('.tabs button').forEach(btn => {
   });
 });
 
+// ---------- Динамические строки вложений (файл/ссылка) ----------
+const attachmentRows = document.getElementById('attachment-rows');
+
+function addFileRow() {
+  const row = document.createElement('div');
+  row.className = 'attachment-row';
+  row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-top:6px;';
+  row.innerHTML = `<input type="file" class="attachment-file-input" style="flex:1;">
+    <button type="button" class="secondary small remove-row-btn">×</button>`;
+  row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+  attachmentRows.appendChild(row);
+}
+
+function addLinkRow() {
+  const row = document.createElement('div');
+  row.className = 'attachment-row';
+  row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-top:6px;';
+  row.innerHTML = `<input type="url" class="attachment-link-input" placeholder="https://..." style="flex:1;">
+    <button type="button" class="secondary small remove-row-btn">×</button>`;
+  row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+  attachmentRows.appendChild(row);
+}
+
+document.getElementById('add-file-row').addEventListener('click', addFileRow);
+document.getElementById('add-link-row').addEventListener('click', addLinkRow);
+
+// ---------- Существующие вложения (при редактировании) ----------
+async function renderExistingAttachments(itemId) {
+  const wrap = document.getElementById('existing-attachments');
+  if (!itemId) { wrap.innerHTML = ''; return; }
+
+  const { data } = await sb
+    .from('portfolio_item_attachments')
+    .select('*')
+    .eq('item_id', itemId)
+    .order('created_at', { ascending: true });
+
+  if (!data || !data.length) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = `<p class="hint">${t('item.existingAttachments')}</p>` + data.map(a => `
+    <div class="attachment-row" style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+      <a href="${a.url}" target="_blank" class="small" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        ${a.type === 'file' ? '📎' : '🔗'} ${escapeHtml(a.label || a.url)}
+      </a>
+      <button type="button" class="danger small" data-delete-attachment="${a.id}">×</button>
+    </div>
+  `).join('');
+
+  wrap.querySelectorAll('[data-delete-attachment]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(t('item.attachmentDeleteConfirm'))) return;
+      await sb.from('portfolio_item_attachments').delete().eq('id', btn.dataset.deleteAttachment);
+      await renderExistingAttachments(itemId);
+    });
+  });
+}
+
 // ---------- Форма добавления/редактирования ----------
 const formWrap = document.getElementById('portfolio-form-wrap');
 const form = document.getElementById('portfolio-form');
@@ -43,7 +166,9 @@ document.getElementById('add-item-btn').addEventListener('click', () => {
   form.reset();
   document.getElementById('item-id').value = '';
   document.getElementById('form-title').textContent = t('dashboard.formTitleNew');
-  document.getElementById('existing-file-hint').textContent = '';
+  currentEditItemId = null;
+  attachmentRows.innerHTML = '';
+  document.getElementById('existing-attachments').innerHTML = '';
   itemError.style.display = 'none';
   formWrap.style.display = 'block';
   window.scrollTo({ top: formWrap.offsetTop - 20, behavior: 'smooth' });
@@ -66,31 +191,45 @@ form.addEventListener('submit', async (e) => {
     const category = document.getElementById('item-category').value;
     const item_date = document.getElementById('item-date').value || null;
     const description = document.getElementById('item-description').value.trim();
-    const external_link = document.getElementById('item-link').value.trim() || null;
-    const fileInput = document.getElementById('item-file');
+    const event_id = document.getElementById('item-event').value || null;
 
-    let file_url = null;
+    let itemId = id;
 
-    if (fileInput.files.length > 0) {
-      const file = fileInput.files[0];
+    if (id) {
+      const { error } = await sb.from('portfolio_items')
+        .update({ title, category, item_date, description, event_id })
+        .eq('id', id);
+      if (error) throw error;
+    } else {
+      const { data: inserted, error } = await sb.from('portfolio_items').insert({
+        user_id: currentProfile.id,
+        title, category, item_date, description, event_id
+      }).select().single();
+      if (error) throw error;
+      itemId = inserted.id;
+    }
+
+    // Загружаем новые файлы и ссылки как вложения
+    const fileInputs = attachmentRows.querySelectorAll('.attachment-file-input');
+    for (const input of fileInputs) {
+      if (input.files.length === 0) continue;
+      const file = input.files[0];
       const path = `${currentProfile.id}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await sb.storage.from('portfolio-files').upload(path, file);
       if (uploadError) throw uploadError;
       const { data: pub } = sb.storage.from('portfolio-files').getPublicUrl(path);
-      file_url = pub.publicUrl;
+      await sb.from('portfolio_item_attachments').insert({
+        item_id: itemId, type: 'file', url: pub.publicUrl, label: file.name
+      });
     }
 
-    if (id) {
-      const updatePayload = { title, category, item_date, description, external_link };
-      if (file_url) updatePayload.file_url = file_url;
-      const { error } = await sb.from('portfolio_items').update(updatePayload).eq('id', id);
-      if (error) throw error;
-    } else {
-      const { error } = await sb.from('portfolio_items').insert({
-        user_id: currentProfile.id,
-        title, category, item_date, description, external_link, file_url
+    const linkInputs = attachmentRows.querySelectorAll('.attachment-link-input');
+    for (const input of linkInputs) {
+      const url = input.value.trim();
+      if (!url) continue;
+      await sb.from('portfolio_item_attachments').insert({
+        item_id: itemId, type: 'link', url, label: url
       });
-      if (error) throw error;
     }
 
     formWrap.style.display = 'none';
@@ -110,12 +249,13 @@ async function loadPortfolio() {
   const listEl = document.getElementById('portfolio-list');
   const { data, error } = await sb
     .from('portfolio_items')
-    .select('*')
+    .select('*, events(id, title, event_date)')
     .eq('user_id', currentProfile.id)
     .order('item_date', { ascending: false, nullsFirst: false });
 
   if (error) {
     listEl.innerHTML = `<p class="error-msg">${t('portfolio.loadError')}</p>`;
+    console.error(error);
     return;
   }
 
@@ -124,14 +264,28 @@ async function loadPortfolio() {
     return;
   }
 
+  // Подтягиваем вложения и комментарии учителя одним запросом на все элементы
+  const ids = data.map(i => i.id);
+  const { data: attachments } = await sb.from('portfolio_item_attachments').select('*').in('item_id', ids);
+  const { data: comments } = await sb.from('portfolio_item_comments').select('*, profiles(first_name, last_name)').in('item_id', ids);
+
+  const attByItem = {};
+  (attachments || []).forEach(a => { (attByItem[a.item_id] = attByItem[a.item_id] || []).push(a); });
+  const commentsByItem = {};
+  (comments || []).forEach(c => { (commentsByItem[c.item_id] = commentsByItem[c.item_id] || []).push(c); });
+
   const labels = categoryLabels();
-  listEl.innerHTML = data.map(item => `
+  listEl.innerHTML = data.map(item => {
+    const atts = attByItem[item.id] || [];
+    const cmts = commentsByItem[item.id] || [];
+    return `
     <div class="card">
       <div class="card-row">
         <div>
           <span class="category-tag">${labels[item.category] || item.category}</span>
           <h3 style="display:inline;">${escapeHtml(item.title)}</h3>
           <p class="meta-line">${item.item_date ? formatDate(item.item_date) : ''}</p>
+          ${item.events ? `<p class="meta-line">${t('item.linkedEvent')}${escapeHtml(item.events.title)}</p>` : ''}
         </div>
         <div>
           <button class="secondary small" data-edit="${item.id}">${t('edit')}</button>
@@ -139,10 +293,13 @@ async function loadPortfolio() {
         </div>
       </div>
       ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
-      ${item.file_url ? `<p><a href="${item.file_url}" target="_blank">${t('openFile')}</a></p>` : ''}
-      ${item.external_link ? `<p><a href="${item.external_link}" target="_blank">${t('externalLink')}</a></p>` : ''}
+      ${atts.map(a => `<p><a href="${a.url}" target="_blank">${a.type === 'file' ? '📎' : '🔗'} ${escapeHtml(a.label || a.url)}</a></p>`).join('')}
+      ${cmts.length ? `<hr class="divider" style="margin:10px 0;"><p class="small muted">${t('comment.label')}</p>` + cmts.map(c => `
+        <p class="small">— ${escapeHtml(c.profiles ? c.profiles.first_name + ' ' + c.profiles.last_name : '')}: ${escapeHtml(c.comment)}</p>
+      `).join('') : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   listEl.querySelectorAll('[data-edit]').forEach(btn => {
     btn.addEventListener('click', () => editItem(data.find(d => d.id === btn.dataset.edit)));
@@ -152,16 +309,17 @@ async function loadPortfolio() {
   });
 }
 
-function editItem(item) {
+async function editItem(item) {
   document.getElementById('item-id').value = item.id;
   document.getElementById('item-title').value = item.title;
   document.getElementById('item-category').value = item.category;
   document.getElementById('item-date').value = item.item_date || '';
   document.getElementById('item-description').value = item.description || '';
-  document.getElementById('item-link').value = item.external_link || '';
+  document.getElementById('item-event').value = item.event_id || '';
   document.getElementById('form-title').textContent = t('dashboard.formTitleEdit');
-  document.getElementById('existing-file-hint').textContent = item.file_url
-    ? t('item.existingFileHint') : '';
+  currentEditItemId = item.id;
+  attachmentRows.innerHTML = '';
+  await renderExistingAttachments(item.id);
   itemError.style.display = 'none';
   formWrap.style.display = 'block';
   window.scrollTo({ top: formWrap.offsetTop - 20, behavior: 'smooth' });
