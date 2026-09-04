@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Ծանուցումներ — Դպրոցական պորտֆոլիո</title>
+<link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('site_theme') || 'light');</script>
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+
+<main class="container">
+  <h2 data-i18n="announcements.title">Ծանուցումներ</h2>
+  <p class="muted" data-i18n="announcements.subtitle">Դպրոցի նորություններն ու հայտարարությունները։</p>
+
+  <div id="create-form-wrap" style="display:none;" class="card plain">
+    <h3 data-i18n="announcements.createTitle">Ավելացնել ծանուցում</h3>
+    <form id="announcement-form">
+      <label for="an-title" data-i18n="announcements.titleLabel">Վերնագիր</label>
+      <input type="text" id="an-title" required>
+
+      <label for="an-body" data-i18n="announcements.bodyLabel">Տեքստ</label>
+      <textarea id="an-body" required></textarea>
+
+      <div class="form-actions">
+        <button type="submit" id="publish-btn" data-i18n="announcements.publish">Հրապարակել</button>
+      </div>
+      <p class="error-msg" id="an-error" style="display:none;"></p>
+    </form>
+  </div>
+
+  <div id="announcements-list"><p class="muted">...</p></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/common.js"></script>
+<script src="js/announcements.js"></script>
+</body>
+</html>
