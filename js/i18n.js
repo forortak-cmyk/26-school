@@ -4,6 +4,20 @@
 // Подключать на КАЖДОЙ странице, после supabaseClient.js/common.js.
 // =========================================================
 
+// =========================================================
+// Справочники: классы, предметы, типы работ портфолио.
+// Единое место для всех страниц — меняете здесь, меняется везде.
+// =========================================================
+const CLASS_LIST = ['10-1', '10-2', '10-3', '10-4', '11-1', '11-2', '11-3', '12-1', '12-2', '12-3'];
+
+const SUBJECT_LIST = [
+  'Hanrahasiv', 'Erkrachaputun', 'TGHG', 'Angleren', 'Grakanutyun', 'Hayoc lezu', 'NZP',
+  'kensabanutyun', 'qimia', 'fizika', 'ashxaragrutyun', 'masnagitakan koxmnoroshum',
+  'tntesagitutyun', 'arvest',
+];
+
+const WORK_TYPE_LIST = ['project', 'classroom'];
+
 const translations = {
   hy: {
     brand: 'Դպրոցական պորտֆոլիո',
@@ -194,6 +208,37 @@ const translations = {
     'announcements.deleteConfirm': 'Ջնջե՞լ այս ծանուցումը։',
     'announcements.by': 'հրապարակեց՝ ',
     'announcements.error': 'Սխալ՝ ',
+
+    'subject.Hanrahasiv': 'Հանրահաշիվ',
+    'subject.Erkrachaputun': 'Երկրաչափություն',
+    'subject.TGHG': 'ՏՀԳ',
+    'subject.Angleren': 'Անգլերեն',
+    'subject.Grakanutyun': 'Գրականություն',
+    'subject.Hayoc lezu': 'Հայոց լեզու',
+    'subject.NZP': 'ՆԶՊ',
+    'subject.kensabanutyun': 'Կենսաբանություն',
+    'subject.qimia': 'Քիմիա',
+    'subject.fizika': 'Ֆիզիկա',
+    'subject.ashxaragrutyun': 'Աշխարհագրություն',
+    'subject.masnagitakan koxmnoroshum': 'Մասնագիտական կողմնորոշում',
+    'subject.tntesagitutyun': 'Տնտեսագիտություն',
+    'subject.arvest': 'Արվեստ',
+
+    'workType.project': 'Նախագծային աշխատանք',
+    'workType.classroom': 'Դասարանական աշխատանք',
+
+    'item.subjectLabel': 'Առարկա',
+    'item.workTypeLabel': 'Աշխատանքի տեսակը',
+    'portfolio.subjectsTitle': 'Առարկաներ',
+    'portfolio.backToSubjects': '← Բոլոր առարկաները',
+    'portfolio.noItemsInSubject': 'Այս առարկայում աշխատանքներ դեռ չկան։',
+    'portfolio.uncategorized': 'Առանց առարկայի',
+
+    'admin.assignSubjectsTitle': 'Ընտրեք առարկա(ներ)ը',
+    'admin.confirmAssign': 'Հաստատել',
+    'admin.teacherSubjectsLabel': 'Դասավանդում է՝ ',
+    'admin.editSubjects': 'Փոխել առարկաները',
+    'admin.noSubjects': 'առարկա նշված չէ',
   },
 
   ru: {
@@ -385,6 +430,37 @@ const translations = {
     'announcements.deleteConfirm': 'Удалить это объявление?',
     'announcements.by': 'опубликовал(а): ',
     'announcements.error': 'Ошибка: ',
+
+    'subject.Hanrahasiv': 'Алгебра',
+    'subject.Erkrachaputun': 'Геометрия',
+    'subject.TGHG': 'ТHГ',
+    'subject.Angleren': 'Английский язык',
+    'subject.Grakanutyun': 'Литература',
+    'subject.Hayoc lezu': 'Армянский язык',
+    'subject.NZP': 'НВП',
+    'subject.kensabanutyun': 'Биология',
+    'subject.qimia': 'Химия',
+    'subject.fizika': 'Физика',
+    'subject.ashxaragrutyun': 'География',
+    'subject.masnagitakan koxmnoroshum': 'Профориентация',
+    'subject.tntesagitutyun': 'Экономика',
+    'subject.arvest': 'Искусство',
+
+    'workType.project': 'Проектная работа',
+    'workType.classroom': 'Классная работа',
+
+    'item.subjectLabel': 'Предмет',
+    'item.workTypeLabel': 'Тип работы',
+    'portfolio.subjectsTitle': 'Предметы',
+    'portfolio.backToSubjects': '← Все предметы',
+    'portfolio.noItemsInSubject': 'По этому предмету пока нет работ.',
+    'portfolio.uncategorized': 'Без предмета',
+
+    'admin.assignSubjectsTitle': 'Выберите предмет(ы)',
+    'admin.confirmAssign': 'Подтвердить',
+    'admin.teacherSubjectsLabel': 'Ведёт: ',
+    'admin.editSubjects': 'Изменить предметы',
+    'admin.noSubjects': 'предмет не указан',
   },
 };
 
