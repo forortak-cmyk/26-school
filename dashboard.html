@@ -20,12 +20,33 @@
 
   <!-- ---------- Вкладка: портфолио ---------- -->
   <section id="tab-portfolio">
+
+    <!-- Аватар -->
+    <div class="card plain card-row" id="avatar-row">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <img id="avatar-preview" src="" alt="" style="display:none; width:64px; height:64px; border-radius:50%; object-fit:cover; border:1px solid var(--line);">
+        <div>
+          <div data-i18n="dashboard.avatarLabel" class="small muted">Ձեր նկարը</div>
+          <label class="btn secondary small" style="margin-top:6px; display:inline-block;">
+            <span data-i18n="dashboard.avatarUpload">Փոխել նկարը</span>
+            <input type="file" id="avatar-input" accept="image/*" style="display:none;">
+          </label>
+        </div>
+      </div>
+    </div>
+    <p class="error-msg" id="avatar-error" style="display:none;"></p>
+
     <div class="section-title">
       <h2 data-i18n="dashboard.title">Իմ պորտֆոլիոն</h2>
       <button id="add-item-btn" data-i18n="dashboard.addItem">+ Ավելացնել աշխատանք</button>
     </div>
 
     <p class="small muted" id="public-link-line"></p>
+    <div class="card plain" style="text-align:center; max-width:220px;">
+      <p class="small muted" data-i18n="dashboard.qrLabel">QR-код ձեր պորտֆոլիոյի</p>
+      <canvas id="qr-canvas"></canvas>
+      <p class="hint" data-i18n="dashboard.qrHint">Ցուցադրեք այս կոդը, որպեսզի ուրիշները արագ բացեն ձեր պորտֆոլիոն։</p>
+    </div>
 
     <div id="portfolio-form-wrap" style="display:none;" class="card plain">
       <h3 id="form-title" data-i18n="dashboard.formTitleNew">Նոր աշխատանք</h3>
@@ -48,12 +69,18 @@
         <label for="item-description" data-i18n="item.descriptionLabel">Նկարագրություն</label>
         <textarea id="item-description"></textarea>
 
-        <label for="item-file" data-i18n="item.fileLabel">Ֆայլ (լուսանկար/փաստաթուղթ, ոչ պարտադիր)</label>
-        <input type="file" id="item-file">
-        <p class="hint" id="existing-file-hint"></p>
+        <label for="item-event" data-i18n="item.eventLabel">Կապել մասնակցած միջոցառման հետ (ոչ պարտադիր)</label>
+        <select id="item-event">
+          <option value="" data-i18n="item.eventNone">— չկա —</option>
+        </select>
 
-        <label for="item-link" data-i18n="item.linkLabel">Կամ արտաքին հղում (ոչ պարտադիր)</label>
-        <input type="url" id="item-link" placeholder="https://...">
+        <label data-i18n="item.attachmentsLabel">Ֆայլեր և հղումներ</label>
+        <div id="existing-attachments"></div>
+        <div id="attachment-rows"></div>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button type="button" class="secondary small" id="add-file-row" data-i18n="item.addFile">+ Ֆայլ</button>
+          <button type="button" class="secondary small" id="add-link-row" data-i18n="item.addLink">+ Հղում</button>
+        </div>
 
         <div class="form-actions">
           <button type="submit" id="save-item-btn" data-i18n="save">Պահպանել</button>
@@ -74,6 +101,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="js/supabaseClient.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/common.js"></script>
