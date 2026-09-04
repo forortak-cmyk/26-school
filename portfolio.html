@@ -23,12 +23,11 @@
 <script src="js/common.js"></script>
 <script src="js/i18n.js"></script>
 <script>
-  const categoryLabels = () => ({
-    project: t('category.project'),
-    achievement: t('category.achievement'),
-    certificate: t('category.certificate'),
-    creative: t('category.creative'),
-  });
+  let allItems = [];
+  let allAttachmentsByItem = {};
+  let allCommentsByItem = {};
+  let viewerProfile = null;
+  let activeSubject = null;
 
   (async () => {
     const params = new URLSearchParams(window.location.search);
@@ -40,12 +39,15 @@
       return;
     }
 
-    // Работает без авторизации: profiles и portfolio_items открыты на select
-    // для анонимных пользователей (см. RLS-политики portfolio_select_anon,
-    // profiles_select_anon в sql/schema.sql).
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data: vp } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+      if (vp && (vp.role === 'teacher' || vp.role === 'admin')) viewerProfile = vp;
+    }
+
     const { data: profile, error: profileError } = await sb
       .from('profiles')
-      .select('first_name, last_name, class')
+      .select('first_name, last_name, class, avatar_url')
       .eq('id', userId)
       .single();
 
@@ -54,36 +56,137 @@
       return;
     }
 
-    const { data: items, error: itemsError } = await sb
+    const { data: items } = await sb
       .from('portfolio_items')
-      .select('*')
+      .select('*, events(title, event_date)')
       .eq('user_id', userId)
       .order('item_date', { ascending: false, nullsFirst: false });
 
-    const labels = categoryLabels();
-    let itemsHtml;
-    if (itemsError || !items || !items.length) {
-      itemsHtml = `<div class="empty-state">${t('portfolio.empty')}</div>`;
-    } else {
-      itemsHtml = items.map(item => `
-        <div class="card">
-          <span class="category-tag">${labels[item.category] || item.category}</span>
-          <h3 style="display:inline;">${escapeHtml(item.title)}</h3>
-          <p class="meta-line">${item.item_date ? formatDate(item.item_date) : ''}</p>
-          ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
-          ${item.file_url ? `<p><a href="${item.file_url}" target="_blank">${t('openFile')}</a></p>` : ''}
-          ${item.external_link ? `<p><a href="${item.external_link}" target="_blank">${t('externalLink')}</a></p>` : ''}
-        </div>
-      `).join('');
+    allItems = items || [];
+
+    if (allItems.length) {
+      const ids = allItems.map(i => i.id);
+      const { data: attachments } = await sb.from('portfolio_item_attachments').select('*').in('item_id', ids);
+      const { data: comments } = await sb.from('portfolio_item_comments').select('*, profiles(first_name, last_name)').in('item_id', ids);
+      (attachments || []).forEach(a => { (allAttachmentsByItem[a.item_id] = allAttachmentsByItem[a.item_id] || []).push(a); });
+      (comments || []).forEach(c => { (allCommentsByItem[c.item_id] = allCommentsByItem[c.item_id] || []).push(c); });
     }
 
+    const avatarHtml = profile.avatar_url
+      ? `<img src="${profile.avatar_url}" alt="" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:1px solid var(--line); float:right;">`
+      : '';
+
     content.innerHTML = `
+      ${avatarHtml}
       <h1>${escapeHtml(profile.first_name)} ${escapeHtml(profile.last_name)}</h1>
       <p class="muted">${t('portfolio.classLabel')}${escapeHtml(profile.class || '—')}</p>
-      <hr class="divider">
-      ${itemsHtml}
+      <hr class="divider" style="clear:both;">
+      <div id="subject-view"></div>
     `;
+
+    renderSubjectView();
   })();
+
+  function renderSubjectView() {
+    const el = document.getElementById('subject-view');
+
+    if (!allItems.length) {
+      el.innerHTML = `<div class="empty-state">${t('portfolio.empty')}</div>`;
+      return;
+    }
+
+    if (!activeSubject) {
+      const usedSubjects = SUBJECT_LIST.filter(s => allItems.some(i => i.subject === s));
+      const hasUncategorized = allItems.some(i => !i.subject);
+
+      let html = `<h3 class="small muted" style="margin-bottom:10px;">${t('portfolio.subjectsTitle')}</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">`;
+      usedSubjects.forEach(s => {
+        const count = allItems.filter(i => i.subject === s).length;
+        html += `<button type="button" class="secondary small subject-pill" data-subject="${s}">${t('subject.' + s)} (${count})</button>`;
+      });
+      if (hasUncategorized) {
+        const count = allItems.filter(i => !i.subject).length;
+        html += `<button type="button" class="secondary small subject-pill" data-subject="__none__">${t('portfolio.uncategorized')} (${count})</button>`;
+      }
+      html += '</div>';
+      el.innerHTML = html;
+
+      el.querySelectorAll('.subject-pill').forEach(btn => {
+        btn.addEventListener('click', () => { activeSubject = btn.dataset.subject; renderSubjectView(); });
+      });
+      return;
+    }
+
+    const items = activeSubject === '__none__' ? allItems.filter(i => !i.subject) : allItems.filter(i => i.subject === activeSubject);
+    const subjectTitle = activeSubject === '__none__' ? t('portfolio.uncategorized') : t('subject.' + activeSubject);
+
+    let html = `<button type="button" class="secondary small" id="back-to-subjects">${t('portfolio.backToSubjects')}</button>
+      <h3 style="margin-top:12px;">${subjectTitle}</h3>`;
+
+    WORK_TYPE_LIST.forEach(wt => {
+      const wtItems = items.filter(i => i.work_type === wt);
+      if (!wtItems.length) return;
+      html += `<p class="small muted" style="margin-top:14px;">${t('workType.' + wt)}</p>`;
+      html += wtItems.map(item => renderItemCard(item)).join('');
+    });
+
+    const noTypeItems = items.filter(i => !i.work_type);
+    if (noTypeItems.length) html += noTypeItems.map(item => renderItemCard(item)).join('');
+    if (!items.length) html += `<div class="empty-state">${t('portfolio.noItemsInSubject')}</div>`;
+
+    el.innerHTML = html;
+
+    document.getElementById('back-to-subjects').addEventListener('click', () => { activeSubject = null; renderSubjectView(); });
+    el.querySelectorAll('.add-comment-btn').forEach(btn => btn.addEventListener('click', () => addComment(btn.dataset.itemId)));
+    el.querySelectorAll('[data-delete-comment]').forEach(btn => btn.addEventListener('click', () => deleteComment(btn.dataset.deleteComment)));
+  }
+
+  function renderItemCard(item) {
+    const atts = allAttachmentsByItem[item.id] || [];
+    const cmts = allCommentsByItem[item.id] || [];
+    return `
+      <div class="card">
+        <h3 style="display:inline;">${escapeHtml(item.title)}</h3>
+        <p class="meta-line">${item.item_date ? formatDate(item.item_date) : ''}</p>
+        ${item.events ? `<p class="meta-line">${t('item.linkedEvent')}${escapeHtml(item.events.title)}</p>` : ''}
+        ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
+        ${atts.map(a => `<p><a href="${a.url}" target="_blank">${a.type === 'file' ? '📎' : '🔗'} ${escapeHtml(a.label || a.url)}</a></p>`).join('')}
+        <div class="comments-block" data-item-id="${item.id}">
+          ${cmts.length ? `<p class="small muted" style="margin-top:8px;">${t('comment.label')}</p>` + cmts.map(c => `
+            <p class="small">— ${escapeHtml(c.profiles ? c.profiles.first_name + ' ' + c.profiles.last_name : '')}: ${escapeHtml(c.comment)}
+              ${viewerProfile && (viewerProfile.id === c.teacher_id || viewerProfile.role === 'admin') ? `<button type="button" class="danger small" data-delete-comment="${c.id}" style="margin-left:6px;">×</button>` : ''}
+            </p>
+          `).join('') : ''}
+          ${viewerProfile ? `
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <input type="text" class="new-comment-input" data-item-id="${item.id}" placeholder="${t('comment.placeholder')}" style="flex:1;">
+              <button type="button" class="secondary small add-comment-btn" data-item-id="${item.id}">${t('comment.submit')}</button>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  async function addComment(itemId) {
+    const input = document.querySelector(`.new-comment-input[data-item-id="${itemId}"]`);
+    const text = input.value.trim();
+    if (!text) return;
+    const { error } = await sb.from('portfolio_item_comments').insert({ item_id: itemId, teacher_id: viewerProfile.id, comment: text });
+    if (error) { alert(error.message); return; }
+    const { data: comments } = await sb.from('portfolio_item_comments').select('*, profiles(first_name, last_name)').eq('item_id', itemId);
+    allCommentsByItem[itemId] = comments || [];
+    renderSubjectView();
+  }
+
+  async function deleteComment(commentId) {
+    if (!confirm(t('comment.deleteConfirm'))) return;
+    await sb.from('portfolio_item_comments').delete().eq('id', commentId);
+    for (const itemId of Object.keys(allCommentsByItem)) {
+      allCommentsByItem[itemId] = allCommentsByItem[itemId].filter(c => c.id !== commentId);
+    }
+    renderSubjectView();
+  }
 </script>
 </body>
 </html>
