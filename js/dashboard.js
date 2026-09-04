@@ -1,15 +1,8 @@
-function categoryLabels() {
-  return {
-    project: t('category.project'),
-    achievement: t('category.achievement'),
-    certificate: t('category.certificate'),
-    creative: t('category.creative'),
-  };
-}
-
 let currentProfile = null;
 let myRegisteredEvents = [];
-let currentEditItemId = null; // если редактируем — сюда кладём id, чтобы удалять/подгружать вложения
+let currentEditItemId = null;
+let allMyItems = [];
+let activeSubjectFilter = null; // null = экран выбора предмета
 
 (async () => {
   const auth = await requireAuth();
@@ -17,8 +10,6 @@ let currentEditItemId = null; // если редактируем — сюда к
   currentProfile = auth.profile;
   renderHeader(currentProfile, 'dashboard');
 
-  // Абсолютный путь от корня сайта — надёжнее, чем вырезать текущее имя
-  // страницы из URL (на Vercel адреса показываются без ".html").
   const publicUrl = `${window.location.origin}/portfolio?id=${currentProfile.id}`;
   document.getElementById('public-link-line').innerHTML =
     `${t('dashboard.publicLink')}<a href="${publicUrl}" target="_blank">${publicUrl}</a>`;
@@ -31,11 +22,21 @@ let currentEditItemId = null; // если редактируем — сюда к
     document.getElementById('qr-canvas').outerHTML = `<p class="small muted">QR ⚠</p>`;
   }
 
+  populateSubjectAndWorkTypeSelects();
   initAvatar();
   await loadMyRegisteredEventsForSelect();
   await loadPortfolio();
   await loadMyEvents();
 })();
+
+// ---------- Заполняем выпадающие списки предмета и типа работы ----------
+function populateSubjectAndWorkTypeSelects() {
+  const subjectSelect = document.getElementById('item-subject');
+  subjectSelect.innerHTML = SUBJECT_LIST.map(s => `<option value="${s}">${t('subject.' + s)}</option>`).join('');
+
+  const workTypeSelect = document.getElementById('item-worktype');
+  workTypeSelect.innerHTML = WORK_TYPE_LIST.map(w => `<option value="${w}">${t('workType.' + w)}</option>`).join('');
+}
 
 // ---------- Аватар ----------
 function initAvatar() {
@@ -91,7 +92,7 @@ async function loadMyRegisteredEventsForSelect() {
   });
 }
 
-// ---------- Вкладки ----------
+// ---------- Вкладки (Портфолио / Мои записи) ----------
 document.querySelectorAll('.tabs button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
@@ -168,6 +169,7 @@ document.getElementById('add-item-btn').addEventListener('click', () => {
   form.reset();
   document.getElementById('item-id').value = '';
   document.getElementById('form-title').textContent = t('dashboard.formTitleNew');
+  if (activeSubjectFilter) document.getElementById('item-subject').value = activeSubjectFilter;
   currentEditItemId = null;
   attachmentRows.innerHTML = '';
   document.getElementById('existing-attachments').innerHTML = '';
@@ -190,7 +192,8 @@ form.addEventListener('submit', async (e) => {
   try {
     const id = document.getElementById('item-id').value;
     const title = document.getElementById('item-title').value.trim();
-    const category = document.getElementById('item-category').value;
+    const subject = document.getElementById('item-subject').value;
+    const work_type = document.getElementById('item-worktype').value;
     const item_date = document.getElementById('item-date').value || null;
     const description = document.getElementById('item-description').value.trim();
     const event_id = document.getElementById('item-event').value || null;
@@ -199,19 +202,18 @@ form.addEventListener('submit', async (e) => {
 
     if (id) {
       const { error } = await sb.from('portfolio_items')
-        .update({ title, category, item_date, description, event_id })
+        .update({ title, subject, work_type, item_date, description, event_id })
         .eq('id', id);
       if (error) throw error;
     } else {
       const { data: inserted, error } = await sb.from('portfolio_items').insert({
         user_id: currentProfile.id,
-        title, category, item_date, description, event_id
+        title, subject, work_type, item_date, description, event_id
       }).select().single();
       if (error) throw error;
       itemId = inserted.id;
     }
 
-    // Загружаем новые файлы и ссылки как вложения
     const fileInputs = attachmentRows.querySelectorAll('.attachment-file-input');
     for (const input of fileInputs) {
       if (input.files.length === 0) continue;
@@ -246,9 +248,8 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// ---------- Загрузка и отрисовка портфолио ----------
+// ---------- Загрузка портфолио ----------
 async function loadPortfolio() {
-  const listEl = document.getElementById('portfolio-list');
   const { data, error } = await sb
     .from('portfolio_items')
     .select('*, events(id, title, event_date)')
@@ -256,35 +257,111 @@ async function loadPortfolio() {
     .order('item_date', { ascending: false, nullsFirst: false });
 
   if (error) {
-    listEl.innerHTML = `<p class="error-msg">${t('portfolio.loadError')}</p>`;
+    document.getElementById('portfolio-list').innerHTML = `<p class="error-msg">${t('portfolio.loadError')}</p>`;
     console.error(error);
     return;
   }
 
-  if (!data.length) {
+  allMyItems = data || [];
+
+  if (allMyItems.length) {
+    const ids = allMyItems.map(i => i.id);
+    const { data: attachments } = await sb.from('portfolio_item_attachments').select('*').in('item_id', ids);
+    const { data: comments } = await sb.from('portfolio_item_comments').select('*, profiles(first_name, last_name)').in('item_id', ids);
+    window.__attByItem = {};
+    (attachments || []).forEach(a => { (window.__attByItem[a.item_id] = window.__attByItem[a.item_id] || []).push(a); });
+    window.__commentsByItem = {};
+    (comments || []).forEach(c => { (window.__commentsByItem[c.item_id] = window.__commentsByItem[c.item_id] || []).push(c); });
+  } else {
+    window.__attByItem = {};
+    window.__commentsByItem = {};
+  }
+
+  renderSubjectView();
+}
+
+// ---------- Экран выбора предмета / список работ по предмету ----------
+function renderSubjectView() {
+  const listEl = document.getElementById('portfolio-list');
+
+  if (!allMyItems.length) {
     listEl.innerHTML = `<div class="empty-state">${t('portfolio.empty')}</div>`;
     return;
   }
 
-  // Подтягиваем вложения и комментарии учителя одним запросом на все элементы
-  const ids = data.map(i => i.id);
-  const { data: attachments } = await sb.from('portfolio_item_attachments').select('*').in('item_id', ids);
-  const { data: comments } = await sb.from('portfolio_item_comments').select('*, profiles(first_name, last_name)').in('item_id', ids);
+  if (!activeSubjectFilter) {
+    // Экран со списком предметов, у которых есть хотя бы одна работа
+    const usedSubjects = SUBJECT_LIST.filter(s => allMyItems.some(i => i.subject === s));
+    const hasUncategorized = allMyItems.some(i => !i.subject);
 
-  const attByItem = {};
-  (attachments || []).forEach(a => { (attByItem[a.item_id] = attByItem[a.item_id] || []).push(a); });
-  const commentsByItem = {};
-  (comments || []).forEach(c => { (commentsByItem[c.item_id] = commentsByItem[c.item_id] || []).push(c); });
+    let html = `<h3 class="small muted" style="margin-bottom:10px;">${t('portfolio.subjectsTitle')}</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">`;
+    usedSubjects.forEach(s => {
+      const count = allMyItems.filter(i => i.subject === s).length;
+      html += `<button type="button" class="secondary small subject-pill" data-subject="${s}">${t('subject.' + s)} (${count})</button>`;
+    });
+    if (hasUncategorized) {
+      const count = allMyItems.filter(i => !i.subject).length;
+      html += `<button type="button" class="secondary small subject-pill" data-subject="__none__">${t('portfolio.uncategorized')} (${count})</button>`;
+    }
+    html += '</div>';
+    listEl.innerHTML = html;
 
-  const labels = categoryLabels();
-  listEl.innerHTML = data.map(item => {
-    const atts = attByItem[item.id] || [];
-    const cmts = commentsByItem[item.id] || [];
-    return `
+    listEl.querySelectorAll('.subject-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeSubjectFilter = btn.dataset.subject;
+        renderSubjectView();
+      });
+    });
+    return;
+  }
+
+  // Экран конкретного предмета
+  const items = activeSubjectFilter === '__none__'
+    ? allMyItems.filter(i => !i.subject)
+    : allMyItems.filter(i => i.subject === activeSubjectFilter);
+
+  const subjectTitle = activeSubjectFilter === '__none__' ? t('portfolio.uncategorized') : t('subject.' + activeSubjectFilter);
+
+  let html = `<button type="button" class="secondary small" id="back-to-subjects">${t('portfolio.backToSubjects')}</button>
+    <h3 style="margin-top:12px;">${subjectTitle}</h3>`;
+
+  WORK_TYPE_LIST.forEach(wt => {
+    const wtItems = items.filter(i => i.work_type === wt);
+    if (!wtItems.length) return;
+    html += `<p class="small muted" style="margin-top:14px;">${t('workType.' + wt)}</p>`;
+    html += wtItems.map(item => renderItemCard(item)).join('');
+  });
+
+  const noTypeItems = items.filter(i => !i.work_type);
+  if (noTypeItems.length) {
+    html += noTypeItems.map(item => renderItemCard(item)).join('');
+  }
+
+  if (!items.length) {
+    html += `<div class="empty-state">${t('portfolio.noItemsInSubject')}</div>`;
+  }
+
+  listEl.innerHTML = html;
+
+  document.getElementById('back-to-subjects').addEventListener('click', () => {
+    activeSubjectFilter = null;
+    renderSubjectView();
+  });
+  listEl.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => editItem(allMyItems.find(d => d.id === btn.dataset.edit)));
+  });
+  listEl.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', () => deleteItem(btn.dataset.delete));
+  });
+}
+
+function renderItemCard(item) {
+  const atts = window.__attByItem[item.id] || [];
+  const cmts = window.__commentsByItem[item.id] || [];
+  return `
     <div class="card">
       <div class="card-row">
         <div>
-          <span class="category-tag">${labels[item.category] || item.category}</span>
           <h3 style="display:inline;">${escapeHtml(item.title)}</h3>
           <p class="meta-line">${item.item_date ? formatDate(item.item_date) : ''}</p>
           ${item.events ? `<p class="meta-line">${t('item.linkedEvent')}${escapeHtml(item.events.title)}</p>` : ''}
@@ -301,20 +378,13 @@ async function loadPortfolio() {
       `).join('') : ''}
     </div>
   `;
-  }).join('');
-
-  listEl.querySelectorAll('[data-edit]').forEach(btn => {
-    btn.addEventListener('click', () => editItem(data.find(d => d.id === btn.dataset.edit)));
-  });
-  listEl.querySelectorAll('[data-delete]').forEach(btn => {
-    btn.addEventListener('click', () => deleteItem(btn.dataset.delete));
-  });
 }
 
 async function editItem(item) {
   document.getElementById('item-id').value = item.id;
   document.getElementById('item-title').value = item.title;
-  document.getElementById('item-category').value = item.category;
+  document.getElementById('item-subject').value = item.subject || SUBJECT_LIST[0];
+  document.getElementById('item-worktype').value = item.work_type || WORK_TYPE_LIST[0];
   document.getElementById('item-date').value = item.item_date || '';
   document.getElementById('item-description').value = item.description || '';
   document.getElementById('item-event').value = item.event_id || '';
