@@ -13,10 +13,16 @@
 <header class="app-header" id="app-header"></header>
 
 <main class="container">
+  <div id="stats-block" class="card plain" style="margin-bottom:20px;"></div>
+
   <h2 data-i18n="admin.title">Օգտատերեր</h2>
   <p class="muted" data-i18n="admin.subtitle">Նշանակեք և հանեք «ուսուցիչ» դերը։ «Ադմին» դերն այստեղից չի փոխվում։</p>
   <input type="text" id="user-search" data-i18n-placeholder="admin.searchPlaceholder" placeholder="Որոնել ըստ անվան, էլ. հասցեի կամ դասարանի...">
   <div id="users-list" style="margin-top:16px;"><p class="muted">...</p></div>
+
+  <hr class="divider">
+  <h2 data-i18n="admin.logTitle">Դերերի փոփոխությունների պատմություն</h2>
+  <div id="role-log-list"><p class="muted">...</p></div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
