@@ -21,6 +21,8 @@ let openSubjectPanelFor = null; // id пользователя, для кото�
 
 async function loadStats() {
   const el = document.getElementById('stats-block');
+  if (!el) return;
+
   const [students, teachers, items, events, regs] = await Promise.all([
     sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
     sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
@@ -43,6 +45,8 @@ async function loadStats() {
 
 async function loadRoleLog() {
   const el = document.getElementById('role-log-list');
+  if (!el) return;
+
   const { data, error } = await sb
     .from('role_change_log')
     .select('*, target:profiles!role_change_log_target_user_id_fkey(first_name, last_name), changer:profiles!role_change_log_changed_by_fkey(first_name, last_name)')
