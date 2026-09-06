@@ -5,12 +5,13 @@ let currentProfile = null;
   if (!auth) return;
   currentProfile = auth.profile;
 
-  if (currentProfile.role !== 'admin') {
+  if (currentProfile.role !== 'admin' && currentProfile.role !== 'teacher') {
     window.location.href = 'dashboard.html';
     return;
   }
 
-  renderHeader(currentProfile, 'admin');
+  renderHeader(currentProfile, currentProfile.role === 'admin' ? 'admin' : 'teacher');
+  document.getElementById('back-link').href = currentProfile.role === 'admin' ? 'admin.html' : 'teacher.html';
   await loadClassAnalytics();
 })();
 
