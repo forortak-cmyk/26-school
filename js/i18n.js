@@ -239,6 +239,17 @@ const translations = {
     'admin.teacherSubjectsLabel': 'Դասավանդում է՝ ',
     'admin.editSubjects': 'Փոխել առարկաները',
     'admin.noSubjects': 'առարկա նշված չէ',
+    'admin.classAnalyticsLink': 'Դասարանների վերլուծություն',
+
+    'classAnalytics.title': 'Դասարանների վերլուծություն',
+    'classAnalytics.subtitle': 'Աշակերտների ակտիվությունը ըստ դասարանի՝ պորտֆոլիոյի աշխատանքներ և մասնակցություն միջոցառումներին։',
+    'classAnalytics.studentsCount': 'Աշակերտներ',
+    'classAnalytics.itemsCount': 'Աշխատանքներ պորտֆոլիոյում',
+    'classAnalytics.avgItems': 'Միջինը մեկ աշակերտի հաշվով',
+    'classAnalytics.regsCount': 'Գրանցումներ միջոցառումների',
+    'classAnalytics.zeroItems': 'Առանց մեկ աշխատանքի',
+    'classAnalytics.allActive': 'Բոլոր աշակերտներն ունեն գոնե մեկ աշխատանք',
+    'classAnalytics.noStudents': 'Այս դասարանում աշակերտներ դեռ չկան։',
   },
 
   ru: {
@@ -461,6 +472,17 @@ const translations = {
     'admin.teacherSubjectsLabel': 'Ведёт: ',
     'admin.editSubjects': 'Изменить предметы',
     'admin.noSubjects': 'предмет не указан',
+    'admin.classAnalyticsLink': 'Аналитика по классам',
+
+    'classAnalytics.title': 'Аналитика по классам',
+    'classAnalytics.subtitle': 'Активность учеников в разрезе класса — работы в портфолио и участие в мероприятиях.',
+    'classAnalytics.studentsCount': 'Учеников',
+    'classAnalytics.itemsCount': 'Работ в портфолио',
+    'classAnalytics.avgItems': 'В среднем на ученика',
+    'classAnalytics.regsCount': 'Записей на мероприятия',
+    'classAnalytics.zeroItems': 'Без единой работы в портфолио',
+    'classAnalytics.allActive': 'У всех учеников есть хотя бы одна работа',
+    'classAnalytics.noStudents': 'В этом классе пока нет учеников.',
   },
 };
 
